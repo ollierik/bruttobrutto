@@ -2,8 +2,14 @@
 <html>
 <head>
 <title>Bruttobrutto!</title>
-<script>
 
+<style>
+  .ralign {
+    text-align: right;
+  }
+
+</style>
+<script>
 
 function findTaxRate(palkka_v)
 {
@@ -23,31 +29,78 @@ function findTaxRate(palkka_v)
   return value
 }
 
+function addBreakdownTitle(title)
+{
+  var table = document.getElementById("breakdown-table");
+  var row = table.insertRow()
+  var hr_cell = row.insertCell(0)
+  hr_cell.colSpan = "4";
+  hr_cell.innerHTML = "<h4>" + title + "</h4>"
+}
+
 function addBreakdownHr()
 {
   var table = document.getElementById("breakdown-table");
   var row = table.insertRow()
   var hr_cell = row.insertCell(0)
-  hr_cell.colSpan = "3";
+  hr_cell.colSpan = "4";
   hr_cell.innerHTML = "<hr/>"
 }
 
-function addBreakdownRow(name, rate, value, bold=false)
+function addHeaderRow()
 {
   var table = document.getElementById("breakdown-table");
 
   var row = table.insertRow()
-  if (bold) {
+  row.style.fontWeight = "bold"
+
+  var name_cell = row.insertCell(0)
+  var rate_cell = row.insertCell(1)
+  var value_cell = row.insertCell(2)
+  var yearly_cell = row.insertCell(3)
+
+  value_cell.innerHTML = "kuukaudessa"
+  value_cell.classList.add("ralign")
+
+  yearly_cell.innerHTML = "vuodessa"
+  yearly_cell.classList.add("ralign")
+}
+
+function addBreakdownRow(args)
+{
+  var table = document.getElementById("breakdown-table");
+
+  var row = table.insertRow()
+
+  if (args.bold) {
     row.style.fontWeight = "bold"
   }
 
   var name_cell = row.insertCell(0)
   var rate_cell = row.insertCell(1)
   var value_cell = row.insertCell(2)
+  var yearly_cell = row.insertCell(3)
 
-  name_cell.innerHTML = name
-  rate_cell.innerHTML = rate
-  value_cell.innerHTML = value
+  if (args.name) {
+    name_cell.innerHTML = args.name + ":"
+  } + ":"
+
+  if (args.rate) {
+    rate_cell.innerHTML = toPercent(args.rate)
+    rate_cell.classList.add("ralign")
+  }
+
+  if (args.eur) {
+    value_cell.innerHTML = toEuro(args.eur)
+    value_cell.classList.add("ralign")
+
+    yearly_cell.innerHTML = toEuro(args.eur * 12)
+    yearly_cell.classList.add("ralign")
+
+  } else if (args.pct) {
+    value_cell.innerHTML = toPercent(args.pct)
+    value_cell.classList.add("ralign")
+  }
 }
 
 function clearBreakdownTable()
@@ -56,33 +109,33 @@ function clearBreakdownTable()
   table.innerHTML = ""
 }
 
-function round(x)
+function toEuro(x)
 {
-  return Math.round(x * 100) / 100
+  return parseFloat(x).toFixed(2).toString().replace(".", ",") + " €"
 }
 
 function toPercent(x)
 {
-  return String(Math.round(x * 10000) / 100) + " %"
+  return (x * 100.0).toFixed(2).toString().replace(".", ",") + " %"
 }
 
 function calculate(bruttopalkka_kk)
 {
   let palkka_pv = bruttopalkka_kk / (365/12)
   let lomaraha_v = palkka_pv * 0.5 * (12 * 2.5 /* num pv */)
-  let lomaraha_per_kk = round(lomaraha_v / 12)
+  let lomaraha_per_kk = lomaraha_v / 12
 
-  let palkka_kk = round(bruttopalkka_kk + lomaraha_per_kk)
+  let palkka_kk = bruttopalkka_kk + lomaraha_per_kk
 
   let tyoelakemaksu_ratio           = 0.1870 // nuorehko
   let sairasvakuutusmaksu_ratio     = 0.0134
   let tapaturmavakuutusmaksu_ratio  = 0.0070 // tilastollinen
   let tyottomyysvakuutusmaksu_ratio = 0.0050 // pieni tyonantaja
 
-  let tyoelakemaksu_kk            = round(palkka_kk * tyoelakemaksu_ratio)
-  let sairasvakuutusmaksu_kk      = round(palkka_kk * sairasvakuutusmaksu_ratio)
-  let tapaturmavakuutusmaksu_kk   = round(palkka_kk * tapaturmavakuutusmaksu_ratio)
-  let tyottomyysvakuutusmaksu_kk  = round(palkka_kk * tyottomyysvakuutusmaksu_ratio)
+  let tyoelakemaksu_kk            = palkka_kk * tyoelakemaksu_ratio
+  let sairasvakuutusmaksu_kk      = palkka_kk * sairasvakuutusmaksu_ratio
+  let tapaturmavakuutusmaksu_kk   = palkka_kk * tapaturmavakuutusmaksu_ratio
+  let tyottomyysvakuutusmaksu_kk  = palkka_kk * tyottomyysvakuutusmaksu_ratio
 
   let tyoterveyskulut_kk = 453 / 12 // 2020 tilasto
 
@@ -95,44 +148,55 @@ function calculate(bruttopalkka_kk)
   let palkkakulut_yht_kk = palkka_kk + tyonantajamaksut_kk
 
   clearBreakdownTable()
-  addBreakdownHr()
-  addBreakdownRow("Bruttopalkka:", "", bruttopalkka_kk)
-  addBreakdownRow("Lomarahaa per kuukausi:", "", lomaraha_per_kk)
-  addBreakdownRow("Bruttopalkka lomarahan kanssa:", "", palkka_kk, true)
+
+  addHeaderRow()
+
   addBreakdownHr()
 
-  addBreakdownRow("Työeläkemaksu (TyEL):", toPercent(tyoelakemaksu_ratio), tyoelakemaksu_kk)
-  addBreakdownRow("Sairasvakuutusmaksu:", toPercent(sairasvakuutusmaksu_ratio), sairasvakuutusmaksu_kk)
-  addBreakdownRow("Tapaturmavakuutusmaksu:", toPercent(tapaturmavakuutusmaksu_ratio), tapaturmavakuutusmaksu_kk)
-  addBreakdownRow("Työttömyysvakuutusmaksu:", toPercent(tyottomyysvakuutusmaksu_ratio), tyottomyysvakuutusmaksu_kk)
-  addBreakdownRow("Työterveyskulut:", "", tyoterveyskulut_kk)
-  addBreakdownRow("Työnantajamaksut yhteensä:", "", tyonantajamaksut_kk, true)
-  addBreakdownRow("Palkkakustannukset yhteensä:", "", palkkakulut_yht_kk , true)
+  addBreakdownRow({ name: "Bruttopalkka",                   eur: bruttopalkka_kk })
+  addBreakdownRow({ name: "Lomaraha",                       eur: lomaraha_per_kk })
+  addBreakdownRow({ name: "Bruttopalkka lomarahan kanssa",  eur: palkka_kk, bold: true })
+
+  addBreakdownHr()
+
+  addBreakdownTitle("Työnantajan maksamat pakolliset veronomaiset kulut")
+
+  addBreakdownRow({ name: "Työeläkemaksu (TyEL)",     rate: tyoelakemaksu_ratio,            eur: tyoelakemaksu_kk })
+  addBreakdownRow({ name: "Sairasvakuutusmaksu",      rate: sairasvakuutusmaksu_ratio,      eur: sairasvakuutusmaksu_kk })
+  addBreakdownRow({ name: "Tapaturmavakuutusmaksu",   rate: tapaturmavakuutusmaksu_ratio,   eur: tapaturmavakuutusmaksu_kk })
+  addBreakdownRow({ name: "Työttömyysvakuutusmaksu",  rate: tyottomyysvakuutusmaksu_ratio,  eur: tyottomyysvakuutusmaksu_kk })
+
+  addBreakdownRow({ name: "Työterveyskulut",             eur: tyoterveyskulut_kk })
+  addBreakdownRow({ name: "Työnantajamaksut yhteensä",   eur: tyonantajamaksut_kk,  bold: true })
+  addBreakdownRow({ name: "Palkkakustannukset yhteensä", eur: palkkakulut_yht_kk,   bold: true })
   addBreakdownHr()
 
   tt_vero_ratio                     = findTaxRate(palkka_kk * 12) * 0.01
   tt_elakevakuutusmaksu_ratio       = 0.0715
   tt_tyottomyysvakuutusmaksu_ratio  = 0.0150 
 
-  tt_vero_kk                    = round(palkka_kk * tt_vero_ratio)
-  tt_elakevakuutusmaksu_kk      = round(palkka_kk * tt_elakevakuutusmaksu_ratio)
-  tt_tyottomyysvakuutusmaksu_kk = round(palkka_kk * tt_tyottomyysvakuutusmaksu_ratio)
+  tt_vero_kk                    = palkka_kk * tt_vero_ratio
+  tt_elakevakuutusmaksu_kk      = palkka_kk * tt_elakevakuutusmaksu_ratio
+  tt_tyottomyysvakuutusmaksu_kk = palkka_kk * tt_tyottomyysvakuutusmaksu_ratio
 
-  tt_verot_ja_maksut = round(tt_vero_kk + tt_elakevakuutusmaksu_kk + tt_tyottomyysvakuutusmaksu_kk)
+  tt_verot_ja_maksut = tt_vero_kk + tt_elakevakuutusmaksu_kk + tt_tyottomyysvakuutusmaksu_kk
   nettopalkka_kk = palkka_kk - tt_verot_ja_maksut
 
-  addBreakdownRow("Verot", toPercent(tt_vero_ratio), tt_vero_kk)
-  addBreakdownRow("Työntekijän eläkevakuutusmaksu", toPercent(tt_elakevakuutusmaksu_ratio), tt_elakevakuutusmaksu_kk)
-  addBreakdownRow("Työntekijän työttömyysvakuutusmaksu", toPercent(tt_tyottomyysvakuutusmaksu_ratio), tt_tyottomyysvakuutusmaksu_kk)
-  addBreakdownRow("Palkasta vähennettävät yhteensä:", "", tt_verot_ja_maksut, true)
-  addBreakdownRow("Nettopalkka", "", nettopalkka_kk, true)
+  addBreakdownTitle("Työntekijän palkasta vähennetyt verot ja kuluosuudet")
 
-  tt_todellinen_veronluonteinen_kk = round(palkkakulut_yht_kk - nettopalkka_kk)
-  tt_todellinen_veronluonteinen_ratio = tt_todellinen_veronluonteinen_kk / palkkakulut_yht_kk
+  addBreakdownRow({ name: "Verot",                    rate: tt_vero_ratio,                    eur: tt_vero_kk })
+  addBreakdownRow({ name: "Työeläkemaksu",            rate: tt_elakevakuutusmaksu_ratio,      eur: tt_elakevakuutusmaksu_kk })
+  addBreakdownRow({ name: "Työttömyysvakuutusmaksu",  rate: tt_tyottomyysvakuutusmaksu_ratio, eur: tt_tyottomyysvakuutusmaksu_kk })
+  addBreakdownRow({ name: "Palkasta vähennettävät yhteensä",      eur: tt_verot_ja_maksut, bold: true })
+  addBreakdownRow({ name: "Nettopalkka", eur: nettopalkka_kk, bold: true })
 
   addBreakdownHr()
-  addBreakdownRow("Todelliset verot ja lakisääteiset veronluonteiset maksut:", "", tt_todellinen_veronluonteinen_kk)
-  addBreakdownRow("Todellinen toteutuva veroprosentti:", "", toPercent(tt_todellinen_veronluonteinen_ratio))
+
+  tt_todellinen_veronluonteinen_kk = palkkakulut_yht_kk - nettopalkka_kk
+  tt_todellinen_veronluonteinen_ratio = tt_todellinen_veronluonteinen_kk / palkkakulut_yht_kk
+
+  addBreakdownRow({ name: "Todelliset verot ja lakisääteiset veronluonteiset maksut",  eur: tt_todellinen_veronluonteinen_kk })
+  addBreakdownRow({ name: "Todellinen toteutuva veroprosentti",                        pct: tt_todellinen_veronluonteinen_ratio })
 }
 
 
@@ -140,9 +204,40 @@ function calculate(bruttopalkka_kk)
 </head>
 <body>
 
-  <label for="salary">Kuukausipalkka bruttona:</label>
-  <input type="text" id="gross-value" name="salary" size="10" value="3217">
-  <input type="button" value="Laske" onclick="calculate(parseFloat(document.getElementById('gross-value').value))">
+  <table>
+
+    <tr>
+      <td>
+        <label for="salary">Kuukausipalkka bruttona:</label>
+      </td>
+      <td>
+        <input type="text" id="gross-salary" name="gross-salary" size="10" value="3217">
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        <input type="radio" id="default-tax-rate" name="tax-rate-type" value="default" checked="true">
+        <label for="default-tax-rate">Laske ennakonpidätysprosentti bruttopalkasta</label>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        <input type="radio" id="custom-tax-rate" name="tax-rate-type" value="custom">
+        <label for="custom-tax-rate">Syötä ennakonpidätysprosentti:</label>
+      </td>
+      <td>
+        <input type="text" id="tax-rate" name="tax-rate" size="10" value="">
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        <input type="button" value="Laske" onclick="calculate(parseFloat(document.getElementById('gross-salary').value))">
+      </td>
+    </tr>
+  </table>
 
   <table id="breakdown-table"></table>
 
