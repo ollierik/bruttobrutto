@@ -33,9 +33,9 @@ function addBreakdownTitle(title)
 {
   var table = document.getElementById("breakdown-table");
   var row = table.insertRow()
-  var hr_cell = row.insertCell(0)
-  hr_cell.colSpan = "4";
-  hr_cell.innerHTML = "<h4>" + title + "</h4>"
+  var title_cell = row.insertCell(0)
+  title_cell.colSpan = "4";
+  title_cell.innerHTML = "<h4>" + title + "</h4>"
 }
 
 function addBreakdownHr()
